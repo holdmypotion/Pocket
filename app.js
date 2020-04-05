@@ -71,8 +71,21 @@ var budgetController = (function() {
 		totals: {
 		inc: 0,
 		exp: 0
-		}
+		}, 
 
+		budget: 0,
+
+		percentage: -1
+	}
+
+	var calculateTotal = function(type) {
+		var sum = 0;
+
+		data.allItems[type].forEach(function(cur) {
+			sum += cur.value;
+		});
+
+		data.totals[type] = sum;
 	};
 
 	return {
@@ -102,6 +115,33 @@ var budgetController = (function() {
 		return newItem;
 		},
 
+		calculateBudget: function() {
+
+			// calculate total income
+			calculateTotal('inc');
+
+			//calculate total expense
+			calculateTotal('exp');
+
+			//calculate the budget income - expense
+			data.budget = data.totals.inc - data.totals.exp;
+
+			//calculate the percentage
+			if (data.totals.inc > 0) {
+				data.percentage = Math.round((data.totals.exp / data.totals.inc) * 100);
+			}
+		},
+
+		getBudget: function() {
+			return {
+				totalInc: data.totals.inc,
+				totalExp: data.totals.exp,
+				budget: data.budget,
+				percentage: data.percentage
+			};
+		},
+
+		// TODO: Remove this before DEPLOYING.
 		testing: function() {
 			console.log(data);
 		}
@@ -119,7 +159,11 @@ var UIController = (function() {
 		inputValue: '.add__value',
 		inputBtn: '.add__btn',
 		expenseContainer: '.expenses__list',
-		incomeContainer: '.income__list'
+		incomeContainer: '.income__list',
+		budgetLabel: '.budget__value',
+		incomeLabel: '.budget__income--value',
+		expenseLabel: '.budget__expenses--value',
+		percentageLabel: '.budget__expenses--percentage',
 	}
   
 	// Publically accessible methods.
@@ -141,12 +185,12 @@ var UIController = (function() {
 
 		// create a html string with placeholder text
 		if (type === 'inc'){
-			element = DOMstrings.incomeContainer;
 
+			element = DOMstrings.incomeContainer;
 			html = '<div class="item clearfix" id="income-%id%"> <div class="item__description">%description%</div><div class="right clearfix"><div class="item__value">%value%</div><div class="item__delete"><button class="item__delete--btn"><i class="ion-ios-close-outline"></i></button></div></div></div>'
 		} else if (type === 'exp') {
-			element = DOMstrings.expenseContainer;
 
+			element = DOMstrings.expenseContainer;
 			html = '<div class="item clearfix" id="expense-%id%"><div class="item__description">%description%</div><div class="right clearfix"><div class="item__value">%value%</div><div class="item__percentage">21%</div><div class="item__delete"><button class="item__delete--btn"><i class="ion-ios-close-outline"></i></button></div></div></div>'
 		}
 
@@ -179,7 +223,21 @@ var UIController = (function() {
 			}); 
 
 			fieldsArr[0].focus();
-			},
+		},
+		
+		displayBudget: function(obj) {
+			/* Displays the budget to the UI */
+
+			document.querySelector(DOMstrings.budgetLabel).textContent = obj.budget;
+			document.querySelector(DOMstrings.incomeLabel).textContent = obj.totalInc;
+			document.querySelector(DOMstrings.expenseLabel).textContent = obj.totalExp;
+
+			if ( obj.percentage > 0) {
+				document.querySelector(DOMstrings.percentageLabel).textContent = obj.percentage + "%";
+			} else {
+				document.querySelector(DOMstrings.percentageLabel).textContent = "---";
+			}
+		},
 	
 		// This makes the DOMstrings publically accessible.
 		getDOMstrings: function(obj, type) {
@@ -210,10 +268,14 @@ var controller = (function(budgetCtrl, UICtrl) {
 	var updateBudget = function() {
 
 		// TODO: 1. Calculate the budget
+		budgetCtrl.calculateBudget();
 
 		// TODO: 2. Display the budget
+		budget = budgetCtrl.getBudget();
 
-		// TODO: 3. Display the budget. 
+		// TODO: 3. Display the budget.
+		UICtrl.displayBudget(budget);
+
 	}
 
 
@@ -233,10 +295,11 @@ var controller = (function(budgetCtrl, UICtrl) {
 			UICtrl.addListItem(newItem, input.type);
 
 			// TODO: 4. Clear the fields
-
 			UICtrl.clearFields();
+
 			// TODO: 5. Calculate and update the budget.
-			updateBudget(); 
+			updateBudget();
+
 		};
 
 	}
@@ -244,6 +307,12 @@ var controller = (function(budgetCtrl, UICtrl) {
 	return {
 		init: function() {
 		console.log("The application has started!");
+		UICtrl.displayBudget({
+			totalInc: 0,
+			totalExp: 0,
+			budget: 0,
+			percentage: 0
+		});
 		setUpEventListeners();
 		}
 	}
