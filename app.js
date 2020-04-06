@@ -223,6 +223,33 @@ var UIController = (function() {
 		container: '.container',
 		expensePercLabel: '.item__percentage'
 	}
+
+	var formatNumber = function(num, type) {
+		var numSplit, int, dec, type;
+		/*
+		+ or - before number
+		exactly 2 decimal points
+		comma seperating the thousands
+
+		2315.5646 -> + 2,315.56
+		2000 -> + 2,000.00
+		*/
+
+		num = Math.abs(num);
+		num = num.toFixed(2);
+
+		numSplit = num.split('.');
+		
+		int = numSplit[0];
+		if (int.length > 3) {
+			int = int.substr(0, int.length - 3) + ',' + int.substr(int.length - 3, 3)
+			// input 23510, output 23,510
+		}
+
+		dec = numSplit[1];
+		
+		return (type === 'exp' ? '-' : '+') + ' ' + int + "." + dec;
+	};
   
 	// Publically accessible methods.
 	return {
@@ -255,7 +282,7 @@ var UIController = (function() {
 		// replace the placeholder text with actual obj values
 		newHtml = html.replace('%id%', obj.id);
 		newHtml = newHtml.replace('%description%', obj.description);
-		newHtml = newHtml.replace('%value%', obj.value);
+		newHtml = newHtml.replace('%value%', formatNumber(obj.value, type));
 
 		// use insertAdjacentHtml to insert HTML through DOM.
 		document.querySelector(element).insertAdjacentHTML('beforeend', newHtml);
@@ -294,10 +321,13 @@ var UIController = (function() {
 		
 		displayBudget: function(obj) {
 			/* Displays the budget to the UI */
+			var type;
 
-			document.querySelector(DOMstrings.budgetLabel).textContent = obj.budget;
-			document.querySelector(DOMstrings.incomeLabel).textContent = obj.totalInc;
-			document.querySelector(DOMstrings.expenseLabel).textContent = obj.totalExp;
+			obj.budget > 0 ? type = 'inc' : type = 'exp';
+
+			document.querySelector(DOMstrings.budgetLabel).textContent = formatNumber(obj.budget, type);
+			document.querySelector(DOMstrings.incomeLabel).textContent = formatNumber(obj.totalInc, 'inc');
+			document.querySelector(DOMstrings.expenseLabel).textContent = formatNumber(obj.totalExp, 'exp');
 
 			if ( obj.percentage > 0) {
 				document.querySelector(DOMstrings.percentageLabel).textContent = obj.percentage + "%";
@@ -327,7 +357,7 @@ var UIController = (function() {
 			});
 
 		},
-	
+
 		// This makes the DOMstrings publically accessible.
 		getDOMstrings: function(obj, type) {
 
